@@ -79,6 +79,21 @@ async function syncSkills(
     projectDir = await prompts.input('Project directory:')
   }
 
+  // Resolve destination directory once per tool (not per skill)
+  const toolDestDirs = new Map<string, string>()
+  for (const toolId of toolIds) {
+    const tool = TOOLS.find(t => t.id === toolId)!
+    const baseDir = scope === 'global'
+      ? tool.globalSkillsDir
+      : path.join(projectDir!, tool.projectSkillsDir)
+
+    const destDir = await prompts.input(
+      `Destination directory for ${tool.name} skills (${scope}):`,
+      baseDir
+    )
+    toolDestDirs.set(toolId, destDir)
+  }
+
   const config = await readConfig(paths.configPath)
 
   for (const skillRef of selected) {
@@ -92,20 +107,11 @@ async function syncSkills(
 
     for (const toolId of toolIds) {
       const tool = TOOLS.find(t => t.id === toolId)!
-      const baseDir = scope === 'global'
-        ? tool.globalSkillsDir
-        : path.join(projectDir!, tool.projectSkillsDir)
-
-      const destDir = await prompts.input(
-        `Destination directory for ${tool.name} skills (${scope}):`,
-        baseDir
-      )
+      const destDir = toolDestDirs.get(toolId)!
 
       if (!await fse.pathExists(destDir)) {
-        const skip = await prompts.confirm(
-          `${destDir} does not exist. Enter a different path?`, false
-        )
-        if (skip) continue
+        log(chalk.yellow(`⚠️  Skipping ${tool.name} — destination does not exist: ${destDir}`))
+        continue
       }
 
       const destLink = path.join(destDir, skillName)
