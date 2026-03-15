@@ -1,0 +1,110 @@
+import * as os from 'os'
+import * as path from 'path'
+import * as fse from 'fs-extra'
+import { runUnlink } from '../../src/commands/unlink'
+import { makeConfigPaths, writeConfig, readConfig, DEFAULT_CONFIG } from '../../src/lib/config'
+import { makeMockPrompts } from '../../src/lib/prompts'
+import { Config } from '../../src/types'
+
+let tmpDir: string
+let paths: ReturnType<typeof makeConfigPaths>
+
+beforeEach(async () => {
+  tmpDir = await fse.mkdtemp(path.join(os.tmpdir(), 'skillsync-unlink-'))
+  paths = makeConfigPaths(path.join(tmpDir, '.skillsync'))
+  await fse.ensureDir(paths.skillsDir)
+  await fse.ensureDir(paths.instructionsDir)
+})
+
+afterEach(async () => {
+  await fse.remove(tmpDir)
+})
+
+describe('runUnlink — skills', () => {
+  it('removes a destination skill symlink and updates config', async () => {
+    const source = path.join(tmpDir, 'brainstorm')
+    await fse.ensureDir(source)
+    const destLink = path.join(tmpDir, 'dest', 'brainstorm')
+    await fse.ensureDir(path.dirname(destLink))
+    await fse.symlink(source, destLink)
+
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      syncs: [{
+        type: 'skill',
+        ref: 'personal/brainstorm',
+        destinations: [{ tool: 'claude-code', path: destLink, scope: 'global' }],
+      }],
+    }
+    await writeConfig(config, paths.configPath)
+
+    const prompts = makeMockPrompts({
+      'Which destination to unlink?': destLink,
+    })
+
+    await runUnlink(prompts, paths)
+
+    expect(await fse.pathExists(destLink)).toBe(false)
+    const updated = await readConfig(paths.configPath)
+    const entry = updated.syncs.find(s => s.ref === 'personal/brainstorm')
+    expect(entry).toBeUndefined()
+  })
+})
+
+describe('runUnlink — instructions', () => {
+  it('refuses to delete non-managed instruction file', async () => {
+    const destFile = path.join(tmpDir, 'CLAUDE.md')
+    await fse.writeFile(destFile, '# hand-written')
+
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      syncs: [{
+        type: 'instructions',
+        ref: 'global',
+        destinations: [{ tool: 'claude-code', path: destFile, scope: 'global' }],
+      }],
+    }
+    await writeConfig(config, paths.configPath)
+
+    const prompts = makeMockPrompts({
+      'Which destination to unlink?': destFile,
+    })
+
+    const logs: string[] = []
+    await runUnlink(prompts, paths, (l) => logs.push(l))
+
+    expect(await fse.pathExists(destFile)).toBe(true)
+    expect(logs.some(l => l.includes('not managed'))).toBe(true)
+  })
+
+  it('removes managed instruction symlink and updates config', async () => {
+    const source = path.join(tmpDir, 'CLAUDE.md')
+    await fse.writeFile(source, '# source')
+    const instrLink = path.join(paths.instructionsDir, 'global.md')
+    await fse.symlink(source, instrLink)
+
+    const destFile = path.join(tmpDir, 'dest', 'CLAUDE.md')
+    await fse.ensureDir(path.dirname(destFile))
+    await fse.symlink(instrLink, destFile)
+
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      syncs: [{
+        type: 'instructions',
+        ref: 'global',
+        destinations: [{ tool: 'claude-code', path: destFile, scope: 'global' }],
+      }],
+    }
+    await writeConfig(config, paths.configPath)
+
+    const prompts = makeMockPrompts({
+      'Which destination to unlink?': destFile,
+    })
+
+    await runUnlink(prompts, paths)
+
+    expect(await fse.pathExists(destFile)).toBe(false)
+    const updated = await readConfig(paths.configPath)
+    expect(updated.syncs.length).toBe(0)
+  })
+})

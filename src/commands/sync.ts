@@ -1,0 +1,198 @@
+import * as path from 'path'
+import * as fse from 'fs-extra'
+import chalk from 'chalk'
+import { PromptAdapter } from '../lib/prompts'
+import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
+import { createSymlink, isLiveSymlink, isBrokenSymlink, isManagedSymlink } from '../lib/fs'
+import { TOOLS, getInstructionDestPath } from '../tools/registry'
+import { Scope } from '../types'
+
+type ConfigPaths = ReturnType<typeof makeConfigPaths>
+
+export async function runSync(
+  prompts: PromptAdapter,
+  paths: ConfigPaths = makeConfigPaths(),
+  log: (line: string) => void = console.log
+): Promise<void> {
+  const syncType = await prompts.select('What to sync?', [
+    { name: 'Skills', value: 'skills' },
+    { name: 'Instructions', value: 'instructions' },
+    { name: 'Both', value: 'both' },
+  ])
+
+  if (syncType === 'skills' || syncType === 'both') {
+    await syncSkills(prompts, paths, log)
+  }
+  if (syncType === 'instructions' || syncType === 'both') {
+    await syncInstructions(prompts, paths, log)
+  }
+}
+
+async function syncSkills(
+  prompts: PromptAdapter,
+  paths: ConfigPaths,
+  log: (line: string) => void
+): Promise<void> {
+  const available: Array<{ name: string; value: string }> = []
+  if (await fse.pathExists(paths.skillsDir)) {
+    for (const label of await fse.readdir(paths.skillsDir)) {
+      const labelDir = path.join(paths.skillsDir, label)
+      for (const skill of await fse.readdir(labelDir)) {
+        available.push({ name: `${label}/${skill}`, value: `${label}/${skill}` })
+      }
+    }
+  }
+
+  if (available.length === 0) {
+    log(chalk.yellow('No skills registered. Run: skillsync skill add'))
+    return
+  }
+
+  const selected = await prompts.multiselect('Which skills?', available)
+  const toolIds = await prompts.multiselect(
+    'Which tool(s)?',
+    TOOLS.map(t => ({ name: t.name, value: t.id }))
+  )
+  const scope = (await prompts.select('Scope:', [
+    { name: 'global', value: 'global' },
+    { name: 'project', value: 'project' },
+  ])) as Scope
+
+  let projectDir: string | undefined
+  if (scope === 'project') {
+    projectDir = await prompts.input('Project directory:')
+  }
+
+  const config = await readConfig(paths.configPath)
+
+  for (const skillRef of selected) {
+    const [label, skillName] = skillRef.split('/')
+    const centralLink = path.join(paths.skillsDir, label, skillName)
+
+    if (!await isLiveSymlink(centralLink)) {
+      log(chalk.yellow(`⚠️  Skipping ${skillRef} — central store symlink is broken`))
+      continue
+    }
+
+    for (const toolId of toolIds) {
+      const tool = TOOLS.find(t => t.id === toolId)!
+      const baseDir = scope === 'global'
+        ? tool.globalSkillsDir
+        : path.join(projectDir!, tool.projectSkillsDir)
+
+      const destDir = await prompts.input(
+        `Destination directory for ${tool.name} skills (${scope}):`,
+        baseDir
+      )
+
+      if (!await fse.pathExists(destDir)) {
+        const skip = await prompts.confirm(
+          `${destDir} does not exist. Enter a different path?`, false
+        )
+        if (skip) continue
+      }
+
+      const destLink = path.join(destDir, skillName)
+
+      if (await fse.pathExists(destLink) || await isBrokenSymlink(destLink)) {
+        const choice = await prompts.select(
+          `${skillName} already exists at destination. Overwrite?`,
+          [
+            { name: 'overwrite', value: 'overwrite' },
+            { name: 'skip', value: 'skip' },
+            { name: 'abort', value: 'abort' },
+          ]
+        )
+        if (choice === 'abort') return
+        if (choice === 'skip') continue
+        await fse.remove(destLink)
+      }
+
+      await createSymlink(centralLink, destLink)
+      log(chalk.green(`✅ ${destLink} → ${centralLink}`))
+
+      let entry = config.syncs.find(s => s.ref === skillRef && s.type === 'skill')
+      if (!entry) {
+        entry = { type: 'skill', ref: skillRef, destinations: [] }
+        config.syncs.push(entry)
+      }
+      const absDestLink = path.resolve(destLink)
+      if (!entry.destinations.find(d => d.path === absDestLink)) {
+        entry.destinations.push({ tool: toolId, path: absDestLink, scope })
+      }
+    }
+  }
+
+  await writeConfig(config, paths.configPath)
+}
+
+async function syncInstructions(
+  prompts: PromptAdapter,
+  paths: ConfigPaths,
+  log: (line: string) => void
+): Promise<void> {
+  const scope = (await prompts.select('Scope:', [
+    { name: 'global', value: 'global' },
+    { name: 'project', value: 'project' },
+  ])) as Scope
+
+  const instrLink = path.join(paths.instructionsDir, `${scope}.md`)
+
+  if (!await isLiveSymlink(instrLink)) {
+    log(chalk.red(`✗ No ${scope} instructions registered. Run: skillsync instructions add`))
+    return
+  }
+
+  const toolIds = await prompts.multiselect(
+    'Which tool(s)?',
+    TOOLS.map(t => ({ name: t.name, value: t.id }))
+  )
+
+  let projectDir: string | undefined
+  if (scope === 'project') {
+    projectDir = await prompts.input('Project directory:')
+  }
+
+  const config = await readConfig(paths.configPath)
+
+  for (const toolId of toolIds) {
+    const tool = TOOLS.find(t => t.id === toolId)!
+    const defaultDest = getInstructionDestPath(tool, scope, projectDir)
+
+    const destPath = await prompts.input(
+      `Destination for ${tool.name} instructions (${scope}):`,
+      defaultDest
+    )
+
+    if (!await fse.pathExists(path.dirname(destPath))) {
+      log(chalk.yellow(`⚠️  Parent directory does not exist: ${path.dirname(destPath)}`))
+      continue
+    }
+
+    if (await fse.pathExists(destPath)) {
+      const managed = await isManagedSymlink(destPath, paths.home)
+      if (!managed) {
+        const replace = await prompts.confirm(
+          `${path.basename(destPath)} already exists and is not managed by skillsync. Replace with symlink?`,
+          false
+        )
+        if (!replace) continue
+      }
+      await fse.remove(destPath)
+    }
+
+    await createSymlink(instrLink, destPath)
+    log(chalk.green(`✅ ${destPath} → ${instrLink}`))
+
+    let entry = config.syncs.find(s => s.ref === scope && s.type === 'instructions')
+    if (!entry) {
+      entry = { type: 'instructions', ref: scope, destinations: [] }
+      config.syncs.push(entry)
+    }
+    if (!entry.destinations.find(d => d.path === destPath)) {
+      entry.destinations.push({ tool: toolId, path: destPath, scope })
+    }
+  }
+
+  await writeConfig(config, paths.configPath)
+}
