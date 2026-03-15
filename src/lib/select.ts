@@ -19,6 +19,10 @@ export function withAllOption(
   return [{ name: 'All', value: ALL_SENTINEL }, ...choices]
 }
 
+/**
+ * Expands a picked array: if ALL_SENTINEL is present, returns all choice values.
+ * Otherwise returns picked as-is.
+ */
 export function resolveAll(picked: string[], choices: Array<{ value: string }>): string[] {
   if (picked.includes(ALL_SENTINEL)) return choices.map(c => c.value)
   return picked

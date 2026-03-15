@@ -29,7 +29,8 @@ export async function runSkillAdd(
 
   if (!isSingleSkill) {
     const entries = await fse.readdir(absSource)
-    const dirs = entries.filter(e => fse.statSync(path.join(absSource, e)).isDirectory())
+    const stats = await Promise.all(entries.map(e => fse.stat(path.join(absSource, e)).then(s => ({ name: e, isDir: s.isDirectory() }))))
+    const dirs = stats.filter(s => s.isDir).map(s => s.name)
     if (dirs.length === 0) {
       console.log(chalk.yellow('No skill subdirectories found.'))
       return
