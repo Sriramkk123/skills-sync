@@ -49,7 +49,7 @@ async function syncSkills(
     return
   }
 
-  const picked = await prompts.multiselect('Which skills? (Space to select)', withAllOption(available))
+  const picked = await prompts.multiselect('Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)', withAllOption(available))
   if (picked.length === 0) {
     log(chalk.yellow('No skills selected. Aborting.'))
     return
@@ -57,7 +57,7 @@ async function syncSkills(
   const selected = resolveAll(picked, available)
 
   const toolIds = await prompts.multiselect(
-    'Which tool(s)? (Space to select)',
+    'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)',
     TOOLS.map(t => ({ name: t.name, value: t.id }))
   )
   if (toolIds.length === 0) {
@@ -174,7 +174,7 @@ async function syncInstructions(
   }
 
   const toolIds = await prompts.multiselect(
-    'Which tool(s)? (Space to select)',
+    'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)',
     TOOLS.map(t => ({ name: t.name, value: t.id }))
   )
 

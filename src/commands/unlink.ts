@@ -52,7 +52,7 @@ export async function runUnlink(
 
   // Step 2: pick skills (with All option)
   const picked = await prompts.multiselect(
-    'Which skills to unlink? (Space to select)',
+    'Which skills to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)',
     withAllOption(choices)
   )
   if (picked.length === 0) {

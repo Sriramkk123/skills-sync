@@ -43,8 +43,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills? (Space to select)': ['personal/brainstorm'],
-      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['personal/brainstorm'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
     })
@@ -63,8 +63,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills? (Space to select)': ['personal/brainstorm'],
-      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['personal/brainstorm'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
     })
@@ -86,8 +86,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills? (Space to select)': ['personal/brainstorm'],
-      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['personal/brainstorm'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
       'brainstorm already exists at destination. Overwrite?': 'overwrite',
@@ -114,8 +114,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills? (Space to select)': ['personal/broken'],
-      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['personal/broken'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
     })
@@ -132,8 +132,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills? (Space to select)': ['__all__'],
-      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
     })
@@ -162,7 +162,7 @@ describe('runSync — instructions', () => {
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
       'Scope:': 'global',
-      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Destination for Claude Code instructions (global):': destFile,
     })
 
@@ -189,7 +189,7 @@ describe('runSync — instructions', () => {
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
       'Scope:': 'global',
-      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Destination for Claude Code instructions (global):': destFile,
       'CLAUDE.md already exists and is not managed by skillsync. Replace with symlink?': true,
     })

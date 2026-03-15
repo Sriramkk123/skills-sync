@@ -66,7 +66,7 @@ describe('runSkillAdd — parent directory with multiple skills', () => {
 
     const prompts = makeMockPrompts({
       'Source path (skill directory or parent directory containing skills):': parentDir,
-      'Which skills to register? (Space to select)': ['skill-a', 'skill-b'],
+      'Which skills to register? (↑↓ navigate, Space select, a = all, Enter confirm)': ['skill-a', 'skill-b'],
       'Label for this source:': 'bulk',
     })
 
@@ -85,7 +85,7 @@ describe('runSkillAdd — parent directory with multiple skills', () => {
 
     const prompts = makeMockPrompts({
       'Source path (skill directory or parent directory containing skills):': parentDir,
-      'Which skills to register? (Space to select)': ['__all__'],
+      'Which skills to register? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
       'Label for this source:': 'bulk-all',
     })
 
@@ -140,7 +140,7 @@ describe('runSkillRemove', () => {
 
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'mylabel',
-      'Which skills to remove? (Space to select)': ['skill-a'],
+      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['skill-a'],
     })
     await runSkillRemove(prompts, paths)
 
@@ -161,7 +161,7 @@ describe('runSkillRemove', () => {
 
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'mylabel2',
-      'Which skills to remove? (Space to select)': ['__all__'],
+      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
     })
     await runSkillRemove(prompts, paths)
 
@@ -187,7 +187,7 @@ describe('runSkillRemove', () => {
 
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'myskills',
-      'Which skills to remove? (Space to select)': ['__all__'],
+      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
     })
     await runSkillRemove(prompts, paths)
 

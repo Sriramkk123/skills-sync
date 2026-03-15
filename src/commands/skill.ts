@@ -37,7 +37,7 @@ export async function runSkillAdd(
     }
     const choices = dirs.map(d => ({ name: d, value: d }))
     const picked = await prompts.multiselect(
-      'Which skills to register? (Space to select)',
+      'Which skills to register? (↑↓ navigate, Space select, a = all, Enter confirm)',
       withAllOption(choices)
     )
     const selectedDirs = resolveAll(picked, choices)
@@ -109,7 +109,7 @@ export async function runSkillRemove(
 
   const choices = skills.map(s => ({ name: s, value: s }))
   const picked = await prompts.multiselect(
-    'Which skills to remove? (Space to select)',
+    'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)',
     withAllOption(choices)
   )
   if (picked.length === 0) {
