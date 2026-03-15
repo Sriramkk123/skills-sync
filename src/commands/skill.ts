@@ -4,7 +4,6 @@ import chalk from 'chalk'
 import { PromptAdapter } from '../lib/prompts'
 import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
 import { createSymlink, isLiveSymlink, isBrokenSymlink } from '../lib/fs'
-import { withAllOption, resolveAll } from '../lib/select'
 
 type ConfigPaths = ReturnType<typeof makeConfigPaths>
 
@@ -38,10 +37,9 @@ export async function runSkillAdd(
     const choices = dirs.map(d => ({ name: d, value: d }))
     const picked = await prompts.multiselect(
       'Which skills to register? (↑↓ navigate, Space select, a = all, Enter confirm)',
-      withAllOption(choices)
+      choices
     )
-    const selectedDirs = resolveAll(picked, choices)
-    skillPaths = selectedDirs.map(name => path.join(absSource, name))
+    skillPaths = picked.map(name => path.join(absSource, name))
   } else {
     skillPaths = [absSource]
   }
@@ -110,21 +108,19 @@ export async function runSkillRemove(
   const choices = skills.map(s => ({ name: s, value: s }))
   const picked = await prompts.multiselect(
     'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)',
-    withAllOption(choices)
+    choices
   )
   if (picked.length === 0) {
     log(chalk.yellow('Nothing selected. Aborting.'))
     return
   }
 
-  const toRemove = resolveAll(picked, choices)
-
-  for (const skill of toRemove) {
+  for (const skill of picked) {
     await fse.remove(path.join(labelDir, skill))
     log(chalk.green(`✅ Removed central store: ${label}/${skill}`))
   }
 
-  const remaining = skills.filter(s => !toRemove.includes(s))
+  const remaining = skills.filter(s => !picked.includes(s))
   if (remaining.length === 0) {
     if (await fse.pathExists(labelDir)) await fse.remove(labelDir)
     config.sources = config.sources.filter(s => s.label !== label)

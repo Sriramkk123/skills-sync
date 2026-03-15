@@ -6,7 +6,6 @@ import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
 import { createSymlink, isLiveSymlink, isBrokenSymlink, isManagedSymlink } from '../lib/fs'
 import { TOOLS, getInstructionDestPath } from '../tools/registry'
 import { Scope } from '../types'
-import { withAllOption, resolveAll } from '../lib/select'
 
 type ConfigPaths = ReturnType<typeof makeConfigPaths>
 
@@ -49,12 +48,11 @@ async function syncSkills(
     return
   }
 
-  const picked = await prompts.multiselect('Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)', withAllOption(available))
-  if (picked.length === 0) {
+  const selected = await prompts.multiselect('Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)', available)
+  if (selected.length === 0) {
     log(chalk.yellow('No skills selected. Aborting.'))
     return
   }
-  const selected = resolveAll(picked, available)
 
   const toolIds = await prompts.multiselect(
     'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)',

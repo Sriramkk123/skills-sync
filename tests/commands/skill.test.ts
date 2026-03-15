@@ -78,24 +78,6 @@ describe('runSkillAdd — parent directory with multiple skills', () => {
     expect((await fse.lstat(linkB)).isSymbolicLink()).toBe(true)
   })
 
-  it('registers all skills when All is selected', async () => {
-    const parentDir = path.join(tmpDir, 'skills-parent-all')
-    await fse.ensureDir(path.join(parentDir, 'skill-a'))
-    await fse.ensureDir(path.join(parentDir, 'skill-b'))
-
-    const prompts = makeMockPrompts({
-      'Source path (skill directory or parent directory containing skills):': parentDir,
-      'Which skills to register? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
-      'Label for this source:': 'bulk-all',
-    })
-
-    await runSkillAdd(prompts, paths)
-
-    const linkA = path.join(paths.skillsDir, 'bulk-all', 'skill-a')
-    const linkB = path.join(paths.skillsDir, 'bulk-all', 'skill-b')
-    expect((await fse.lstat(linkA)).isSymbolicLink()).toBe(true)
-    expect((await fse.lstat(linkB)).isSymbolicLink()).toBe(true)
-  })
 })
 
 describe('runSkillAdd — collision handling', () => {
@@ -161,7 +143,7 @@ describe('runSkillRemove', () => {
 
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'mylabel2',
-      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
+      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['skill-a'],
     })
     await runSkillRemove(prompts, paths)
 
@@ -187,7 +169,7 @@ describe('runSkillRemove', () => {
 
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'myskills',
-      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
+      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['skill-a'],
     })
     await runSkillRemove(prompts, paths)
 

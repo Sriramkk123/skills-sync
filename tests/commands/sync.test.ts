@@ -174,7 +174,7 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['personal/brainstorm', 'personal/debug'],
       'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,

@@ -3,7 +3,6 @@ import chalk from 'chalk'
 import { PromptAdapter } from '../lib/prompts'
 import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
 import { isManagedSymlink, removeSymlink } from '../lib/fs'
-import { withAllOption, resolveAll } from '../lib/select'
 
 type ConfigPaths = ReturnType<typeof makeConfigPaths>
 
@@ -50,18 +49,17 @@ export async function runUnlink(
   const inDir = allDests.filter(d => d.dir === selectedDir)
   const choices = inDir.map(d => ({ name: d.label, value: d.path }))
 
-  // Step 2: pick skills (with All option)
+  // Step 2: pick skills
   const picked = await prompts.multiselect(
     'Which skills to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)',
-    withAllOption(choices)
+    choices
   )
   if (picked.length === 0) {
     log(chalk.yellow('Nothing selected. Aborting.'))
     return
   }
 
-  const pathsToRemove = resolveAll(picked, choices)
-  const toRemove = inDir.filter(d => pathsToRemove.includes(d.path))
+  const toRemove = inDir.filter(d => picked.includes(d.path))
 
   for (const dest of toRemove) {
     if (dest.type === 'instructions') {

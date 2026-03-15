@@ -82,7 +82,7 @@ describe('runUnlink — skills', () => {
 
     const prompts = makeMockPrompts({
       'Which directory to unlink from?': destDir,
-      'Which skills to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)': ['__all__'],
+      'Which skills to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)': [linkA, linkB],
     })
 
     await runUnlink(prompts, paths)
