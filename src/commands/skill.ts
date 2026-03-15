@@ -93,23 +93,45 @@ export async function runSkillRemove(
   }
 
   const label = await prompts.select(
-    'Which source to remove?',
+    'Which source to remove from?',
     config.sources.map(s => ({ name: `${s.label} (${s.path})`, value: s.label }))
   )
 
-  // Remove central store symlinks
   const labelDir = path.join(paths.skillsDir, label)
-  if (await fse.pathExists(labelDir)) {
-    for (const skill of await fse.readdir(labelDir)) {
-      await fse.remove(path.join(labelDir, skill))
-      log(chalk.green(`✅ Removed central store: ${label}/${skill}`))
-    }
-    await fse.remove(labelDir)
+  const skills = await fse.pathExists(labelDir) ? await fse.readdir(labelDir) : []
+
+  if (skills.length === 0) {
+    config.sources = config.sources.filter(s => s.label !== label)
+    await writeConfig(config, paths.configPath)
+    log(chalk.green(`✅ Removed "${label}" from config`))
+    return
   }
 
-  config.sources = config.sources.filter(s => s.label !== label)
+  const choices = skills.map(s => ({ name: s, value: s }))
+  const picked = await prompts.multiselect(
+    'Which skills to remove? (Space to select)',
+    withAllOption(choices)
+  )
+  if (picked.length === 0) {
+    log(chalk.yellow('Nothing selected. Aborting.'))
+    return
+  }
+
+  const toRemove = resolveAll(picked, choices)
+
+  for (const skill of toRemove) {
+    await fse.remove(path.join(labelDir, skill))
+    log(chalk.green(`✅ Removed central store: ${label}/${skill}`))
+  }
+
+  const remaining = skills.filter(s => !toRemove.includes(s))
+  if (remaining.length === 0) {
+    if (await fse.pathExists(labelDir)) await fse.remove(labelDir)
+    config.sources = config.sources.filter(s => s.label !== label)
+    log(chalk.green(`✅ Removed "${label}" from config`))
+  }
+
   await writeConfig(config, paths.configPath)
-  log(chalk.green(`✅ Removed "${label}" from config`))
 }
 
 export async function runSkillList(
