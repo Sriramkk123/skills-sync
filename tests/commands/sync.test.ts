@@ -203,8 +203,8 @@ describe('runSync — instructions', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
-      'Scope:': 'global',
       'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
+      'Scope:': 'global',
       'Destination for Claude Code instructions (global):': destFile,
     })
 
@@ -230,8 +230,8 @@ describe('runSync — instructions', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
-      'Scope:': 'global',
       'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
+      'Scope:': 'global',
       'Destination for Claude Code instructions (global):': destFile,
       'CLAUDE.md already exists and is not managed by skillsync. Replace with symlink?': true,
     })

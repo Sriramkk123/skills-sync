@@ -28,7 +28,6 @@ describe('runInstructionsAdd — source resolution', () => {
       'Scope (global or project):': 'global',
       'Source tool:': 'claude-code',
       'Source path (directory or file):': source,
-      'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)': [],
     })
 
     await runInstructionsAdd(prompts, paths)
@@ -46,7 +45,6 @@ describe('runInstructionsAdd — source resolution', () => {
       'Scope (global or project):': 'global',
       'Source tool:': 'claude-code',
       'Source path (directory or file):': projectDir,
-      'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)': [],
     })
 
     await runInstructionsAdd(prompts, paths)
@@ -64,7 +62,6 @@ describe('runInstructionsAdd — source resolution', () => {
       'Scope (global or project):': 'global',
       'Source tool:': 'codex',
       'Source path (directory or file):': projectDir,
-      'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)': [],
     })
 
     await runInstructionsAdd(prompts, paths)
@@ -105,53 +102,8 @@ describe('runInstructionsAdd — source resolution', () => {
   })
 })
 
-describe('runInstructionsAdd — destination syncing', () => {
-  it('creates destination symlink with tool-correct filename', async () => {
-    const source = path.join(tmpDir, 'CLAUDE.md')
-    await fse.writeFile(source, '# instructions')
-    const destDir = path.join(tmpDir, 'dest')
-    await fse.ensureDir(destDir)
-    const destFile = path.join(destDir, 'CLAUDE.md')
-
-    const prompts = makeMockPrompts({
-      'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': source,
-      'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
-      'Destination for Claude Code (global):': destFile,
-    })
-
-    await runInstructionsAdd(prompts, paths)
-
-    const instrLink = path.join(paths.instructionsDir, 'global.md')
-    const stat = await fse.lstat(destFile)
-    expect(stat.isSymbolicLink()).toBe(true)
-    expect(await fse.readlink(destFile)).toBe(instrLink)
-  })
-
-  it('updates config.json with source and sync destinations', async () => {
-    const source = path.join(tmpDir, 'CLAUDE.md')
-    await fse.writeFile(source, '# instructions')
-    const destDir = path.join(tmpDir, 'dest')
-    await fse.ensureDir(destDir)
-    const destFile = path.join(destDir, 'CLAUDE.md')
-
-    const prompts = makeMockPrompts({
-      'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': source,
-      'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
-      'Destination for Claude Code (global):': destFile,
-    })
-
-    await runInstructionsAdd(prompts, paths)
-
-    const config = await readConfig(paths.configPath)
-    expect(config.instructions.global).toBe(source)
-    expect(config.syncs.some(s => s.type === 'instructions' && s.ref === 'global')).toBe(true)
-  })
-
-  it('registers source but skips sync when no destinations selected', async () => {
+describe('runInstructionsAdd — registration only', () => {
+  it('saves source to config.json and does not create any destination symlinks', async () => {
     const source = path.join(tmpDir, 'CLAUDE.md')
     await fse.writeFile(source, '# instructions')
 
@@ -159,7 +111,6 @@ describe('runInstructionsAdd — destination syncing', () => {
       'Scope (global or project):': 'global',
       'Source tool:': 'claude-code',
       'Source path (directory or file):': source,
-      'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)': [],
     })
 
     await runInstructionsAdd(prompts, paths)
@@ -182,7 +133,6 @@ describe('runInstructionsAdd — destination syncing', () => {
       'Source tool:': 'claude-code',
       'Source path (directory or file):': newSource,
       'global.md already exists. Overwrite?': true,
-      'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)': [],
     })
 
     await runInstructionsAdd(prompts, paths)
@@ -191,7 +141,6 @@ describe('runInstructionsAdd — destination syncing', () => {
   })
 
   it('aborts if user declines overwrite', async () => {
-
     const source = path.join(tmpDir, 'CLAUDE.md')
     await fse.writeFile(source, '# instructions')
     const linkPath = path.join(paths.instructionsDir, 'global.md')

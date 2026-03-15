@@ -3,7 +3,7 @@ import * as fse from 'fs-extra'
 import chalk from 'chalk'
 import { PromptAdapter } from '../lib/prompts'
 import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
-import { createSymlink, isLiveSymlink, isBrokenSymlink } from '../lib/fs'
+import { createSymlink, isLiveSymlink, isBrokenSymlink, removeSymlink } from '../lib/fs'
 
 type ConfigPaths = ReturnType<typeof makeConfigPaths>
 
@@ -123,6 +123,44 @@ export async function runSkillRemove(
     return
   }
 
+  // Collect destination symlinks for the selected skills
+  const destEntries: Array<{ path: string }> = []
+  for (const skill of picked) {
+    const ref = `${label}/${skill}`
+    const syncEntry = config.syncs.find(s => s.type === 'skill' && s.ref === ref)
+    if (syncEntry) {
+      for (const dest of syncEntry.destinations) {
+        destEntries.push({ path: dest.path })
+      }
+    }
+  }
+
+  const confirmed = await prompts.confirm(
+    `Remove ${picked.length} skill(s) and ${destEntries.length} destination symlink(s)?`,
+    false
+  )
+  if (!confirmed) {
+    log(chalk.gray('Aborted.'))
+    return
+  }
+
+  // Remove destination symlinks
+  for (const dest of destEntries) {
+    try {
+      await removeSymlink(dest.path)
+      log(chalk.green(`✅ Removed destination: ${dest.path}`))
+    } catch {
+      log(chalk.yellow(`⚠️  ${dest.path} not on disk — removing from config`))
+    }
+  }
+
+  // Remove from config.syncs
+  for (const skill of picked) {
+    const ref = `${label}/${skill}`
+    config.syncs = config.syncs.filter(s => !(s.type === 'skill' && s.ref === ref))
+  }
+
+  // Remove from central store
   for (const skill of picked) {
     await fse.remove(path.join(labelDir, skill))
     log(chalk.green(`✅ Removed central store: ${label}/${skill}`))

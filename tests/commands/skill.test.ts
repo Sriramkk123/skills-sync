@@ -123,6 +123,7 @@ describe('runSkillRemove', () => {
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'mylabel',
       'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['skill-a'],
+      'Remove 1 skill(s) and 0 destination symlink(s)?': true,
     })
     await runSkillRemove(prompts, paths)
 
@@ -144,6 +145,7 @@ describe('runSkillRemove', () => {
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'mylabel2',
       'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['skill-a'],
+      'Remove 1 skill(s) and 0 destination symlink(s)?': true,
     })
     await runSkillRemove(prompts, paths)
 
@@ -151,7 +153,7 @@ describe('runSkillRemove', () => {
     expect(updated.sources.find(s => s.label === 'mylabel2')).toBeUndefined()
   })
 
-  it('does not touch destination symlinks or sync entries', async () => {
+  it('removes destination symlinks and config.syncs entries', async () => {
     const sourceSkill = path.join(tmpDir, 'my-skill')
     await fse.ensureDir(sourceSkill)
     const centralLink = path.join(paths.skillsDir, 'myskills', 'my-skill')
@@ -169,13 +171,38 @@ describe('runSkillRemove', () => {
 
     const prompts = makeMockPrompts({
       'Which source to remove from?': 'myskills',
-      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['skill-a'],
+      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['my-skill'],
+      'Remove 1 skill(s) and 1 destination symlink(s)?': true,
     })
     await runSkillRemove(prompts, paths)
 
     const updated = await readConfig(paths.configPath)
-    expect(updated.syncs.length).toBe(1)
-    expect(await fse.lstat(destLink).then(() => true).catch(() => false)).toBe(true)
+    expect(updated.syncs.length).toBe(0)
+    expect(await fse.pathExists(destLink)).toBe(false)
+  })
+
+  it('aborts without removing anything when user declines confirm', async () => {
+    const sourceSkill = path.join(tmpDir, 'keep-skill')
+    await fse.ensureDir(sourceSkill)
+    const centralLink = path.join(paths.skillsDir, 'myskills', 'keep-skill')
+    await fse.ensureDir(path.dirname(centralLink))
+    await fse.symlink(sourceSkill, centralLink)
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      sources: [{ label: 'myskills', path: sourceSkill }],
+    }
+    await writeConfig(config, paths.configPath)
+
+    const prompts = makeMockPrompts({
+      'Which source to remove from?': 'myskills',
+      'Which skills to remove? (↑↓ navigate, Space select, a = all, Enter confirm)': ['keep-skill'],
+      'Remove 1 skill(s) and 0 destination symlink(s)?': false,
+    })
+    await runSkillRemove(prompts, paths)
+
+    expect(await fse.pathExists(centralLink)).toBe(true)
+    const updated = await readConfig(paths.configPath)
+    expect(updated.sources.find(s => s.label === 'myskills')).toBeDefined()
   })
 })
 

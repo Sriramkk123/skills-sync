@@ -144,7 +144,7 @@ describe('runUnlink — instructions', () => {
 
     const prompts = makeMockPrompts({
       'Which directory to unlink from?': path.dirname(destFile),
-      'Which skills to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)': [destFile],
+      'Which instructions to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)': [destFile],
     })
 
     const logs: string[] = []
@@ -176,7 +176,7 @@ describe('runUnlink — instructions', () => {
 
     const prompts = makeMockPrompts({
       'Which directory to unlink from?': path.dirname(destFile),
-      'Which skills to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)': [destFile],
+      'Which instructions to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)': [destFile],
     })
 
     await runUnlink(prompts, paths)

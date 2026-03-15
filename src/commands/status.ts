@@ -1,4 +1,5 @@
 import * as path from 'path'
+import * as fse from 'fs-extra'
 import chalk from 'chalk'
 import { makeConfigPaths, readConfig } from '../lib/config'
 import { isLiveSymlink, isBrokenSymlink } from '../lib/fs'
@@ -12,32 +13,39 @@ export async function runStatus(
   const config = await readConfig(paths.configPath)
 
   log(chalk.bold('\nSkills'))
-  const skillSyncs = config.syncs.filter(s => s.type === 'skill')
 
-  if (skillSyncs.length === 0) {
-    log(chalk.gray('  (none registered)'))
+  let anySkills = false
+  if (await fse.pathExists(paths.skillsDir)) {
+    for (const label of await fse.readdir(paths.skillsDir)) {
+      const labelDir = path.join(paths.skillsDir, label)
+      for (const skillName of await fse.readdir(labelDir)) {
+        anySkills = true
+        const centralLink = path.join(labelDir, skillName)
+        const live = await isLiveSymlink(centralLink)
+        const broken = await isBrokenSymlink(centralLink)
+        const health = live
+          ? chalk.green('✅ source live')
+          : broken ? chalk.yellow('⚠️ broken source') : chalk.gray('?')
+
+        const ref = `${label}/${skillName}`
+        log(`  ${ref}   ${health}`)
+
+        const syncEntry = config.syncs.find(s => s.type === 'skill' && s.ref === ref)
+        if (!syncEntry || syncEntry.destinations.length === 0) {
+          log(chalk.gray('    → (not synced yet)'))
+        } else {
+          for (const dest of syncEntry.destinations) {
+            const destLive = await isLiveSymlink(dest.path)
+            const destStatus = destLive ? chalk.green('✅') : chalk.red('✗ missing')
+            log(`    → ${dest.path}  [${dest.tool} · ${dest.scope}]  ${destStatus}`)
+          }
+        }
+      }
+    }
   }
 
-  for (const entry of skillSyncs) {
-    const [label, skillName] = entry.ref.split('/')
-    const centralLink = path.join(paths.skillsDir, label, skillName)
-    const live = await isLiveSymlink(centralLink)
-    const broken = await isBrokenSymlink(centralLink)
-    const health = live
-      ? chalk.green('✅ source live')
-      : broken ? chalk.yellow('⚠️ broken source') : chalk.gray('?')
-
-    log(`  ${entry.ref}   ${health}`)
-
-    if (entry.destinations.length === 0) {
-      log(chalk.gray('    → (no destinations synced)'))
-    }
-
-    for (const dest of entry.destinations) {
-      const destLive = await isLiveSymlink(dest.path)
-      const destStatus = destLive ? chalk.green('✅') : chalk.red('✗ missing')
-      log(`    → ${dest.path}  [${dest.tool} · ${dest.scope}]  ${destStatus}`)
-    }
+  if (!anySkills) {
+    log(chalk.gray('  (none registered)'))
   }
 
   log(chalk.bold('\nInstructions'))

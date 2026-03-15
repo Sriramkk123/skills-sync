@@ -175,6 +175,11 @@ async function syncInstructions(
   paths: ConfigPaths,
   log: (line: string) => void
 ): Promise<void> {
+  const toolIds = await prompts.multiselect(
+    'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)',
+    TOOLS.map(t => ({ name: t.name, value: t.id }))
+  )
+
   const scope = (await prompts.select('Scope:', [
     { name: 'global', value: 'global' },
     { name: 'project', value: 'project' },
@@ -186,11 +191,6 @@ async function syncInstructions(
     log(chalk.red(`✗ No ${scope} instructions registered. Run: skillsync instructions add`))
     return
   }
-
-  const toolIds = await prompts.multiselect(
-    'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)',
-    TOOLS.map(t => ({ name: t.name, value: t.id }))
-  )
 
   let projectDir: string | undefined
   if (scope === 'project') {

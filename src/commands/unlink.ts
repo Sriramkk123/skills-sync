@@ -49,9 +49,11 @@ export async function runUnlink(
   const inDir = allDests.filter(d => d.dir === selectedDir)
   const choices = inDir.map(d => ({ name: d.label, value: d.path }))
 
-  // Step 2: pick skills
+  // Step 2: pick items — label varies by type for clarity
+  const allTypes = new Set(inDir.map(d => d.type))
+  const itemLabel = allTypes.has('instructions') && !allTypes.has('skill') ? 'instructions' : 'skills'
   const picked = await prompts.multiselect(
-    'Which skills to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)',
+    `Which ${itemLabel} to unlink? (↑↓ navigate, Space select, a = all, Enter confirm)`,
     choices
   )
   if (picked.length === 0) {

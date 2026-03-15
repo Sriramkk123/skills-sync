@@ -3,7 +3,7 @@ import * as fse from 'fs-extra'
 import chalk from 'chalk'
 import { PromptAdapter } from '../lib/prompts'
 import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
-import { createSymlink, isManagedSymlink, removeSymlink } from '../lib/fs'
+import { createSymlink, removeSymlink } from '../lib/fs'
 import { TOOLS, getInstructionDestPath } from '../tools/registry'
 import { Scope } from '../types'
 
@@ -65,67 +65,10 @@ export async function runInstructionsAdd(
   await createSymlink(absSource, instrLink)
   log(chalk.green(`✅ Central store: ~/.skillsync/instructions/${scope}.md → ${absSource}`))
 
-  // Select destination tools
-  const destToolIds = await prompts.multiselect(
-    'Sync to which tools? (↑↓ navigate, Space select, a = all, Enter confirm)',
-    TOOLS.map(t => ({ name: t.name, value: t.id }))
-  )
-
   const config = await readConfig(paths.configPath)
   config.instructions[scope] = absSource
-
-  if (destToolIds.length === 0) {
-    log(chalk.yellow('No destinations selected. Instructions registered but not synced.'))
-    await writeConfig(config, paths.configPath)
-    return
-  }
-
-  let projectDir: string | undefined
-  if (scope === 'project') {
-    projectDir = await prompts.input('Project directory:')
-  }
-
-  for (const toolId of destToolIds) {
-    const tool = TOOLS.find(t => t.id === toolId)!
-    const defaultDest = getInstructionDestPath(tool, scope, projectDir)
-
-    const destPath = await prompts.input(
-      `Destination for ${tool.name} (${scope}):`,
-      defaultDest
-    )
-
-    const parentDir = path.dirname(destPath)
-    if (!await fse.pathExists(parentDir)) {
-      log(chalk.yellow(`⚠️  Parent directory does not exist: ${parentDir}`))
-      continue
-    }
-
-    if (await fse.pathExists(destPath)) {
-      const managed = await isManagedSymlink(destPath, paths.home)
-      if (!managed) {
-        const replace = await prompts.confirm(
-          `${path.basename(destPath)} already exists and is not managed by skillsync. Replace with symlink?`,
-          false
-        )
-        if (!replace) continue
-      }
-      await fse.remove(destPath)
-    }
-
-    await createSymlink(instrLink, destPath)
-    log(chalk.green(`✅ ${destPath} → ${instrLink}`))
-
-    let entry = config.syncs.find(s => s.ref === scope && s.type === 'instructions')
-    if (!entry) {
-      entry = { type: 'instructions', ref: scope, destinations: [] }
-      config.syncs.push(entry)
-    }
-    if (!entry.destinations.find(d => d.path === destPath)) {
-      entry.destinations.push({ tool: toolId, path: destPath, scope })
-    }
-  }
-
   await writeConfig(config, paths.configPath)
+  log(chalk.gray('  Run: skillsync sync → instructions to distribute to tools'))
 }
 
 export async function runInstructionsRemove(
