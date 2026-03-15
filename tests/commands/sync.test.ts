@@ -123,6 +123,26 @@ describe('runSync — skills', () => {
     await runSync(prompts, paths, (line) => logs.push(line))
     expect(logs.some(l => l.includes('⚠️') || l.includes('broken'))).toBe(true)
   })
+
+  it('syncs all skills when All is selected', async () => {
+    await addSkillToStore('personal', 'brainstorm')
+    await addSkillToStore('personal', 'debug')
+    const destDir = path.join(tmpDir, 'dest-all')
+    await fse.ensureDir(destDir)
+
+    const prompts = makeMockPrompts({
+      'What to sync?': 'skills',
+      'Which skills? (Space to select)': ['__all__'],
+      'Which tool(s)? (Space to select)': ['claude-code'],
+      'Scope:': 'global',
+      'Destination directory for Claude Code skills (global):': destDir,
+    })
+
+    await runSync(prompts, paths)
+
+    expect((await fse.lstat(path.join(destDir, 'brainstorm'))).isSymbolicLink()).toBe(true)
+    expect((await fse.lstat(path.join(destDir, 'debug'))).isSymbolicLink()).toBe(true)
+  })
 })
 
 describe('runSync — instructions', () => {
