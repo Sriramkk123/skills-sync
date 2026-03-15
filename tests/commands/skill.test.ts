@@ -179,6 +179,75 @@ describe('runSkillRemove', () => {
   })
 })
 
+describe('runSkillAdd — label validation', () => {
+  it('rejects label containing path traversal (../)', async () => {
+    const sourceSkill = path.join(tmpDir, 'my-skill')
+    await fse.ensureDir(sourceSkill)
+    await fse.writeFile(path.join(sourceSkill, 'SKILL.md'), '')
+
+    const logs: string[] = []
+    const prompts = makeMockPrompts({
+      'Source path (skill directory or parent directory containing skills):': sourceSkill,
+      'Label for this source:': '../../.ssh',
+    })
+
+    await runSkillAdd(prompts, paths, (line) => logs.push(line))
+
+    // No symlink should be created in skills dir
+    expect(await fse.pathExists(paths.skillsDir)).toBe(true)
+    // skills dir should be empty (no traversal happened)
+    const entries = await fse.readdir(paths.skillsDir)
+    expect(entries.length).toBe(0)
+    expect(logs.some(l => l.includes('Invalid label'))).toBe(true)
+  })
+
+  it('rejects label containing forward slash', async () => {
+    const sourceSkill = path.join(tmpDir, 'my-skill')
+    await fse.ensureDir(sourceSkill)
+    await fse.writeFile(path.join(sourceSkill, 'SKILL.md'), '')
+
+    const logs: string[] = []
+    const prompts = makeMockPrompts({
+      'Source path (skill directory or parent directory containing skills):': sourceSkill,
+      'Label for this source:': 'foo/bar',
+    })
+
+    await runSkillAdd(prompts, paths, (line) => logs.push(line))
+    expect(logs.some(l => l.includes('Invalid label'))).toBe(true)
+  })
+
+  it('accepts valid labels (alphanumeric, hyphens, underscores, colons)', async () => {
+    const sourceSkill = path.join(tmpDir, 'my-skill')
+    await fse.ensureDir(sourceSkill)
+    await fse.writeFile(path.join(sourceSkill, 'SKILL.md'), '')
+
+    const prompts = makeMockPrompts({
+      'Source path (skill directory or parent directory containing skills):': sourceSkill,
+      'Label for this source:': 'my-org:skills_v2',
+    })
+
+    await runSkillAdd(prompts, paths)
+
+    const linkPath = path.join(paths.skillsDir, 'my-org:skills_v2', 'my-skill')
+    expect(await fse.pathExists(linkPath)).toBe(true)
+  })
+
+  it('rejects label that is only dots (..)', async () => {
+    const sourceSkill = path.join(tmpDir, 'my-skill')
+    await fse.ensureDir(sourceSkill)
+    await fse.writeFile(path.join(sourceSkill, 'SKILL.md'), '')
+
+    const logs: string[] = []
+    const prompts = makeMockPrompts({
+      'Source path (skill directory or parent directory containing skills):': sourceSkill,
+      'Label for this source:': '..',
+    })
+
+    await runSkillAdd(prompts, paths, (line) => logs.push(line))
+    expect(logs.some(l => l.includes('Invalid label'))).toBe(true)
+  })
+})
+
 describe('runSkillList', () => {
   it('lists skills from central store with live status', async () => {
     const sourceSkill = path.join(tmpDir, 'brainstorm')

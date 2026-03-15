@@ -63,9 +63,9 @@ async function syncSkills(
     return
   }
 
-  const copyTools = toolIds.filter(id => TOOLS.find(t => t.id === id)?.usesCopy)
-  if (copyTools.length > 0) {
-    const names = copyTools.map(id => TOOLS.find(t => t.id === id)!.name).join(', ')
+  const copyToolObjects = toolIds.map(id => TOOLS.find(t => t.id === id)!).filter(t => t.usesCopy)
+  if (copyToolObjects.length > 0) {
+    const names = copyToolObjects.map(t => t.name).join(', ')
     log(chalk.yellow(`⚠️  ${names} does not support symlinks — skills will be copied instead.`))
     log(chalk.yellow(`   Edits made in ${names} will NOT reflect back at the source.`))
   }
@@ -143,8 +143,16 @@ async function syncSkills(
         await fse.copy(realSource, destLink, { overwrite: true })
         log(chalk.green(`✅ ${destLink} (copy from ${realSource})`))
       } else {
-        await createSymlink(centralLink, destLink)
-        log(chalk.green(`✅ ${destLink} → ${centralLink}`))
+        try {
+          await createSymlink(centralLink, destLink)
+          log(chalk.green(`✅ ${destLink} → ${centralLink}`))
+        } catch (err: unknown) {
+          if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+            log(chalk.yellow(`⚠️  ${skillName} already exists at destination (concurrent write?), skipping`))
+          } else {
+            throw err
+          }
+        }
       }
 
       let entry = config.syncs.find(s => s.ref === skillRef && s.type === 'skill')

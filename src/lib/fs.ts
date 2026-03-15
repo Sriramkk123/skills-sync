@@ -15,7 +15,8 @@ export async function isManagedSymlink(linkPath: string, skillsyncHome: string):
     // land outside skillsyncHome. readlink() reads only one hop.
     const target = await fse.readlink(linkPath)
     const absTarget = path.resolve(path.dirname(linkPath), target)
-    return absTarget.startsWith(skillsyncHome + path.sep) || absTarget === skillsyncHome
+    const relative = path.relative(skillsyncHome, absTarget)
+    return !path.isAbsolute(relative) && !relative.startsWith('..')
   } catch {
     return false
   }

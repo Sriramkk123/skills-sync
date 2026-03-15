@@ -14,7 +14,7 @@ import { runSync } from './commands/sync'
 import { runStatus } from './commands/status'
 import { runUnlink } from './commands/unlink'
 import { defaultPrompts } from './lib/prompts'
-import { isInitialized, makeConfigPaths } from './lib/config'
+import { isInitialized } from './lib/config'
 
 const program = new Command()
 
@@ -29,8 +29,8 @@ program
   .action(async () => {
     try {
       await runInit()
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })
@@ -44,8 +44,8 @@ skillCmd
     try {
       await guardInit()
       await runSkillAdd(defaultPrompts)
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })
@@ -57,8 +57,8 @@ skillCmd
     try {
       await guardInit()
       await runSkillList()
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })
@@ -70,8 +70,8 @@ skillCmd
     try {
       await guardInit()
       await runSkillRemove(defaultPrompts)
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })
@@ -85,8 +85,8 @@ instrCmd
     try {
       await guardInit()
       await runInstructionsAdd(defaultPrompts)
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })
@@ -98,8 +98,8 @@ program
     try {
       await guardInit()
       await runSync(defaultPrompts)
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })
@@ -111,8 +111,8 @@ program
     try {
       await guardInit()
       await runStatus()
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })
@@ -124,8 +124,8 @@ program
     try {
       await guardInit()
       await runUnlink(defaultPrompts)
-    } catch (e: any) {
-      console.error(chalk.red(e.message))
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
     }
   })

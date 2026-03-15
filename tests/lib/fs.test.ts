@@ -44,6 +44,16 @@ describe('createSymlink', () => {
 
     expect(await fse.pathExists(link)).toBe(true)
   })
+
+  it('throws with EEXIST code when link path already exists', async () => {
+    const target = path.join(tmpDir, 'source-skill')
+    const link = path.join(tmpDir, 'dest', 'skill')
+    await fse.ensureDir(target)
+    await createSymlink(target, link)  // first call succeeds
+
+    // second call on same path should throw EEXIST
+    await expect(createSymlink(target, link)).rejects.toMatchObject({ code: 'EEXIST' })
+  })
 })
 
 describe('isManagedSymlink', () => {
@@ -74,6 +84,24 @@ describe('isManagedSymlink', () => {
 
   it('returns false for non-existent path', async () => {
     expect(await isManagedSymlink(path.join(tmpDir, 'ghost'), skillsyncHome)).toBe(false)
+  })
+
+  it('returns false for symlink pointing to a sibling directory with a similar name', async () => {
+    const evilHome = skillsyncHome + '-evil'
+    await fse.ensureDir(evilHome)
+    const target = path.join(evilHome, 'malicious-skill')
+    await fse.ensureDir(target)
+    const link = path.join(tmpDir, 'dest', 'skill')
+    await createSymlink(target, link)
+
+    expect(await isManagedSymlink(link, skillsyncHome)).toBe(false)
+  })
+
+  it('returns true for symlink pointing exactly to skillsync home', async () => {
+    const link = path.join(tmpDir, 'dest', 'home-link')
+    await createSymlink(skillsyncHome, link)
+
+    expect(await isManagedSymlink(link, skillsyncHome)).toBe(true)
   })
 })
 

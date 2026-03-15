@@ -35,6 +35,58 @@ describe('readConfig', () => {
     expect(config.sources).toEqual([])
     expect(config.syncs).toEqual([])
   })
+
+  it('throws if config.json has missing sources array', async () => {
+    const configPath = path.join(tmpDir, 'config.json')
+    await fse.writeJson(configPath, { instructions: {}, syncs: [] })
+    await expect(readConfig(configPath)).rejects.toThrow('Invalid config')
+  })
+
+  it('throws if config.json sources entry is missing required fields', async () => {
+    const configPath = path.join(tmpDir, 'config.json')
+    await fse.writeJson(configPath, {
+      sources: [{ label: 'test' }],  // missing 'path' field
+      instructions: {},
+      syncs: [],
+    })
+    await expect(readConfig(configPath)).rejects.toThrow('Invalid config')
+  })
+
+  it('throws if config.json has wrong types', async () => {
+    const configPath = path.join(tmpDir, 'config.json')
+    await fse.writeJson(configPath, { sources: 'not-an-array', instructions: {}, syncs: [] })
+    await expect(readConfig(configPath)).rejects.toThrow('Invalid config')
+  })
+
+  it('throws if syncs entry has invalid type field', async () => {
+    const configPath = path.join(tmpDir, 'config.json')
+    await fse.writeJson(configPath, {
+      sources: [],
+      instructions: {},
+      syncs: [{ type: 'invalid', ref: 'x', destinations: [] }],
+    })
+    await expect(readConfig(configPath)).rejects.toThrow('Invalid config')
+  })
+
+  it('throws if destination entry is missing required fields', async () => {
+    const configPath = path.join(tmpDir, 'config.json')
+    await fse.writeJson(configPath, {
+      sources: [],
+      instructions: {},
+      syncs: [{ type: 'skill', ref: 'x', destinations: [{ tool: 'claude-code' }] }],
+    })
+    await expect(readConfig(configPath)).rejects.toThrow('Invalid config')
+  })
+
+  it('throws if destination scope is not "global" or "project"', async () => {
+    const configPath = path.join(tmpDir, 'config.json')
+    await fse.writeJson(configPath, {
+      sources: [],
+      instructions: {},
+      syncs: [{ type: 'skill', ref: 'x', destinations: [{ tool: 'claude-code', path: '/p', scope: 'invalid' }] }],
+    })
+    await expect(readConfig(configPath)).rejects.toThrow('Invalid config')
+  })
 })
 
 describe('writeConfig', () => {

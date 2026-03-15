@@ -9,15 +9,16 @@ type ConfigPaths = ReturnType<typeof makeConfigPaths>
 
 export async function runSkillAdd(
   prompts: PromptAdapter,
-  paths: ConfigPaths = makeConfigPaths()
+  paths: ConfigPaths = makeConfigPaths(),
+  log: (line: string) => void = console.log
 ): Promise<void> {
   const sourcePath = await prompts.input(
     'Source path (skill directory or parent directory containing skills):'
   )
 
   if (!await fse.pathExists(sourcePath)) {
-    console.log(chalk.red(`✗ Path does not exist: ${sourcePath}`))
-    return runSkillAdd(prompts, paths)
+    log(chalk.red(`✗ Path does not exist: ${sourcePath}`))
+    return runSkillAdd(prompts, paths, log)
   }
 
   const absSource = path.resolve(sourcePath)
@@ -31,7 +32,7 @@ export async function runSkillAdd(
     const stats = await Promise.all(entries.map(e => fse.stat(path.join(absSource, e)).then(s => ({ name: e, isDir: s.isDirectory() }))))
     const dirs = stats.filter(s => s.isDir).map(s => s.name)
     if (dirs.length === 0) {
-      console.log(chalk.yellow('No skill subdirectories found.'))
+      log(chalk.yellow('No skill subdirectories found.'))
       return
     }
     const choices = dirs.map(d => ({ name: d, value: d }))
@@ -45,6 +46,13 @@ export async function runSkillAdd(
   }
 
   const label = await prompts.input('Label for this source:', path.basename(absSource))
+
+  // Validate label is a safe directory name (no path separators or traversal)
+  const validLabel = /^[a-zA-Z0-9][a-zA-Z0-9_\-:.@]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/.test(label)
+  if (!validLabel) {
+    log(chalk.red(`✗ Invalid label "${label}": labels must contain only letters, numbers, hyphens, underscores, colons, dots, or @`))
+    return
+  }
 
   const config = await readConfig(paths.configPath)
 
@@ -62,12 +70,12 @@ export async function runSkillAdd(
     const linkPath = path.join(paths.skillsDir, label, skillName)
 
     if (await fse.pathExists(linkPath)) {
-      console.log(chalk.yellow(`⚠️  Already registered, skipping: ${label}/${skillName}`))
+      log(chalk.yellow(`⚠️  Already registered, skipping: ${label}/${skillName}`))
       continue
     }
 
     await createSymlink(skillPath, linkPath)
-    console.log(chalk.green(`✅ ${label}/${skillName}`))
+    log(chalk.green(`✅ ${label}/${skillName}`))
   }
 
   if (!existingSource) {
