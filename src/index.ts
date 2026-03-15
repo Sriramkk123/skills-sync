@@ -9,7 +9,7 @@ import { Command } from 'commander'
 import chalk from 'chalk'
 import { runInit } from './commands/init'
 import { runSkillAdd, runSkillList, runSkillRemove } from './commands/skill'
-import { runInstructionsAdd } from './commands/instructions'
+import { runInstructionsAdd, runInstructionsRemove } from './commands/instructions'
 import { runSync } from './commands/sync'
 import { runStatus } from './commands/status'
 import { runUnlink } from './commands/unlink'
@@ -85,6 +85,19 @@ instrCmd
     try {
       await guardInit()
       await runInstructionsAdd(defaultPrompts)
+    } catch (e: unknown) {
+      console.error(chalk.red(e instanceof Error ? e.message : String(e)))
+      process.exit(1)
+    }
+  })
+
+instrCmd
+  .command('remove')
+  .description('Remove registered instructions and their destination symlinks')
+  .action(async () => {
+    try {
+      await guardInit()
+      await runInstructionsRemove(defaultPrompts)
     } catch (e: unknown) {
       console.error(chalk.red(e instanceof Error ? e.message : String(e)))
       process.exit(1)
