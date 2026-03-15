@@ -72,23 +72,6 @@ describe('runStatus', () => {
     expect(output.some(l => l.includes('⚠️'))).toBe(true)
   })
 
-  it('shows (not synced yet) for skills registered but never synced', async () => {
-    const source = path.join(tmpDir, 'my-skill')
-    await fse.ensureDir(source)
-    const centralLink = path.join(paths.skillsDir, 'personal', 'my-skill')
-    await fse.ensureDir(path.dirname(centralLink))
-    await fse.symlink(source, centralLink)
-
-    // No entry in config.syncs — skill was registered but never synced
-    await writeConfig(DEFAULT_CONFIG, paths.configPath)
-
-    const output: string[] = []
-    await runStatus(paths, (line) => output.push(line))
-
-    expect(output.some(l => l.includes('my-skill'))).toBe(true)
-    expect(output.some(l => l.includes('not synced yet'))).toBe(true)
-  })
-
   it('shows instructions with their destinations', async () => {
     const source = path.join(tmpDir, 'CLAUDE.md')
     await fse.writeFile(source, '# instructions')

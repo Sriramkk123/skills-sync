@@ -20,14 +20,13 @@ afterEach(async () => {
 })
 
 describe('runInstructionsAdd — source resolution', () => {
-  it('creates central store symlink when given a file path directly', async () => {
+  it('creates central store symlink from exact file path', async () => {
     const source = path.join(tmpDir, 'CLAUDE.md')
     await fse.writeFile(source, '# instructions')
 
     const prompts = makeMockPrompts({
       'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': source,
+      'Source file path (e.g. /path/to/CLAUDE.md):': source,
     })
 
     await runInstructionsAdd(prompts, paths)
@@ -36,55 +35,34 @@ describe('runInstructionsAdd — source resolution', () => {
     expect(await fse.readlink(linkPath)).toBe(source)
   })
 
-  it('auto-finds the correct file in a directory based on source tool', async () => {
-    const projectDir = path.join(tmpDir, 'my-project')
-    await fse.ensureDir(projectDir)
-    await fse.writeFile(path.join(projectDir, 'CLAUDE.md'), '# claude instructions')
+  it('works with AGENTS.md path directly', async () => {
+    const source = path.join(tmpDir, 'AGENTS.md')
+    await fse.writeFile(source, '# codex instructions')
 
     const prompts = makeMockPrompts({
       'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': projectDir,
+      'Source file path (e.g. /path/to/CLAUDE.md):': source,
     })
 
     await runInstructionsAdd(prompts, paths)
 
     const linkPath = path.join(paths.instructionsDir, 'global.md')
-    expect(await fse.readlink(linkPath)).toBe(path.join(projectDir, 'CLAUDE.md'))
+    expect(await fse.readlink(linkPath)).toBe(source)
   })
 
-  it('finds AGENTS.md when source tool is codex', async () => {
-    const projectDir = path.join(tmpDir, 'codex-project')
-    await fse.ensureDir(projectDir)
-    await fse.writeFile(path.join(projectDir, 'AGENTS.md'), '# codex instructions')
-
-    const prompts = makeMockPrompts({
-      'Scope (global or project):': 'global',
-      'Source tool:': 'codex',
-      'Source path (directory or file):': projectDir,
-    })
-
-    await runInstructionsAdd(prompts, paths)
-
-    const linkPath = path.join(paths.instructionsDir, 'global.md')
-    expect(await fse.readlink(linkPath)).toBe(path.join(projectDir, 'AGENTS.md'))
-  })
-
-  it('errors when expected file is not found in directory', async () => {
-    const projectDir = path.join(tmpDir, 'empty-project')
-    await fse.ensureDir(projectDir)
-    await fse.writeFile(path.join(projectDir, 'AGENTS.md'), '# wrong format')
+  it('errors if a directory is given instead of a file', async () => {
+    const dir = path.join(tmpDir, 'some-dir')
+    await fse.ensureDir(dir)
 
     const logs: string[] = []
     const prompts = makeMockPrompts({
       'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code', // expects CLAUDE.md, but only AGENTS.md exists
-      'Source path (directory or file):': projectDir,
+      'Source file path (e.g. /path/to/CLAUDE.md):': dir,
     })
 
     await runInstructionsAdd(prompts, paths, (line) => logs.push(line))
 
-    expect(logs.some(l => l.includes('CLAUDE.md not found'))).toBe(true)
+    expect(logs.some(l => l.includes('Expected a file'))).toBe(true)
     expect(await fse.pathExists(path.join(paths.instructionsDir, 'global.md'))).toBe(false)
   })
 
@@ -92,8 +70,7 @@ describe('runInstructionsAdd — source resolution', () => {
     const logs: string[] = []
     const prompts = makeMockPrompts({
       'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': path.join(tmpDir, 'nonexistent'),
+      'Source file path (e.g. /path/to/CLAUDE.md):': path.join(tmpDir, 'nonexistent.md'),
     })
 
     await runInstructionsAdd(prompts, paths, (line) => logs.push(line))
@@ -109,8 +86,7 @@ describe('runInstructionsAdd — registration only', () => {
 
     const prompts = makeMockPrompts({
       'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': source,
+      'Source file path (e.g. /path/to/CLAUDE.md):': source,
     })
 
     await runInstructionsAdd(prompts, paths)
@@ -130,8 +106,7 @@ describe('runInstructionsAdd — registration only', () => {
 
     const prompts = makeMockPrompts({
       'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': newSource,
+      'Source file path (e.g. /path/to/CLAUDE.md):': newSource,
       'global.md already exists. Overwrite?': true,
     })
 
@@ -150,8 +125,7 @@ describe('runInstructionsAdd — registration only', () => {
 
     const prompts = makeMockPrompts({
       'Scope (global or project):': 'global',
-      'Source tool:': 'claude-code',
-      'Source path (directory or file):': newSource,
+      'Source file path (e.g. /path/to/CLAUDE.md):': newSource,
       'global.md already exists. Overwrite?': false,
     })
 

@@ -4,7 +4,6 @@ import chalk from 'chalk'
 import { PromptAdapter } from '../lib/prompts'
 import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
 import { createSymlink, removeSymlink } from '../lib/fs'
-import { TOOLS, getInstructionDestPath } from '../tools/registry'
 import { Scope } from '../types'
 
 type ConfigPaths = ReturnType<typeof makeConfigPaths>
@@ -19,35 +18,18 @@ export async function runInstructionsAdd(
     { name: 'project', value: 'project' },
   ])) as Scope
 
-  // Source tool selection tells us which filename to look for
-  const sourceToolId = await prompts.select(
-    'Source tool:',
-    TOOLS.map(t => ({ name: t.name, value: t.id }))
-  )
-  const sourceTool = TOOLS.find(t => t.id === sourceToolId)!
-  const sourceFileName = scope === 'global'
-    ? sourceTool.globalInstructionFile
-    : sourceTool.projectInstructionFile
+  const sourcePath = await prompts.input('Source file path (e.g. /path/to/CLAUDE.md):')
 
-  const sourcePath = await prompts.input('Source path (directory or file):')
-
-  let absSource = path.resolve(sourcePath)
-  let stat: fse.Stats
+  const absSource = path.resolve(sourcePath)
   try {
-    stat = await fse.stat(absSource)
+    const stat = await fse.stat(absSource)
+    if (stat.isDirectory()) {
+      log(chalk.red(`✗ Expected a file, got a directory: ${absSource}`))
+      return
+    }
   } catch {
     log(chalk.red(`✗ Path does not exist: ${sourcePath}`))
     return
-  }
-
-  if (stat.isDirectory()) {
-    const candidate = path.join(absSource, sourceFileName)
-    if (!await fse.pathExists(candidate)) {
-      log(chalk.red(`✗ ${sourceFileName} not found in ${absSource}`))
-      return
-    }
-    absSource = candidate
-    log(chalk.gray(`  Using ${sourceFileName} from directory`))
   }
 
   // Register in central store
