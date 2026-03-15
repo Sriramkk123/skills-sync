@@ -93,7 +93,7 @@ export async function runSkillRemove(
     config.sources.map(s => ({ name: `${s.label} (${s.path})`, value: s.label }))
   )
 
-  // Remove central store symlinks only — source registration is preserved
+  // Remove central store symlinks
   const labelDir = path.join(paths.skillsDir, label)
   if (await fse.pathExists(labelDir)) {
     for (const skill of await fse.readdir(labelDir)) {
@@ -103,8 +103,9 @@ export async function runSkillRemove(
     await fse.remove(labelDir)
   }
 
+  config.sources = config.sources.filter(s => s.label !== label)
   await writeConfig(config, paths.configPath)
-  log(chalk.green(`✅ Removed central store for "${label}"`))
+  log(chalk.green(`✅ Removed "${label}" from config`))
 }
 
 export async function runSkillList(

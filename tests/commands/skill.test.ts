@@ -131,8 +131,7 @@ describe('runSkillRemove', () => {
 
     expect(await fse.pathExists(linkPath)).toBe(false)
     const updated = await readConfig(paths.configPath)
-    // Source registration is preserved
-    expect(updated.sources.find(s => s.label === 'myskills')).toBeDefined()
+    expect(updated.sources.find(s => s.label === 'myskills')).toBeUndefined()
     expect(logs.some(l => l.includes('myskills'))).toBe(true)
   })
 
@@ -170,8 +169,8 @@ describe('runSkillRemove', () => {
     const updated = await readConfig(paths.configPath)
     // Sync entry preserved
     expect(updated.syncs.length).toBe(1)
-    // Source preserved
-    expect(updated.sources.length).toBe(1)
+    // Source removed from config
+    expect(updated.sources.length).toBe(0)
   })
 })
 
