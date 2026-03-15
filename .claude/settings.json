@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty'); if [[ \"$file\" == */src/* || \"$file\" == */tests/* ]]; then cd /Users/sriramkk/personal/skills-sync && pnpm test --passWithNoTests 2>&1 | tail -6; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty'); if [[ \"$file\" == *pnpm-lock.yaml ]]; then echo 'Blocked: do not edit pnpm-lock.yaml directly' >&2; exit 2; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
