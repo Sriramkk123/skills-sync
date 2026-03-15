@@ -100,9 +100,11 @@ describe('writeConfig', () => {
 
   it('readConfig after writeConfig round-trips correctly', async () => {
     const configPath = path.join(tmpDir, 'config.json')
-    const config = { ...DEFAULT_CONFIG, instructions: { global: '/my/CLAUDE.md' } }
+    const instr = { label: 'work', scope: 'global' as const, path: '/my/CLAUDE.md' }
+    const config = { ...DEFAULT_CONFIG, instructions: [instr] }
     await writeConfig(config, configPath)
     const read = await readConfig(configPath)
-    expect(read.instructions.global).toBe('/my/CLAUDE.md')
+    expect(read.instructions[0].path).toBe('/my/CLAUDE.md')
+    expect(read.instructions[0].label).toBe('work')
   })
 })

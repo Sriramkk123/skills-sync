@@ -75,7 +75,7 @@ describe('runStatus', () => {
   it('shows instructions with their destinations', async () => {
     const source = path.join(tmpDir, 'CLAUDE.md')
     await fse.writeFile(source, '# instructions')
-    const instrLink = path.join(paths.instructionsDir, 'global.md')
+    const instrLink = path.join(paths.instructionsDir, 'work.md')
     await fse.symlink(source, instrLink)
 
     const destFile = path.join(tmpDir, 'dest', 'CLAUDE.md')
@@ -84,10 +84,10 @@ describe('runStatus', () => {
 
     const config: Config = {
       ...DEFAULT_CONFIG,
-      instructions: { global: source },
+      instructions: [{ label: 'work', path: source }],
       syncs: [{
         type: 'instructions',
-        ref: 'global',
+        ref: 'work',
         destinations: [{ tool: 'claude-code', path: destFile, scope: 'global' }],
       }],
     }
@@ -96,7 +96,7 @@ describe('runStatus', () => {
     const output: string[] = []
     await runStatus(paths, (line) => output.push(line))
 
-    expect(output.some(l => l.includes('global'))).toBe(true)
-    expect(output.some(l => l.includes('CLAUDE.md') || l.includes('claude-code'))).toBe(true)
+    expect(output.some(l => l.includes('work'))).toBe(true)
+    expect(output.some(l => l.includes('claude-code'))).toBe(true)
   })
 })

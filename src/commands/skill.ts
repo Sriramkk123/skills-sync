@@ -84,6 +84,7 @@ export async function runSkillAdd(
     existingSource.path = absSource
   }
   await writeConfig(config, paths.configPath)
+  log(chalk.gray('  Run: skillsync sync → skills to distribute to tools'))
 }
 
 export async function runSkillRemove(

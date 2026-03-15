@@ -28,7 +28,7 @@ export function makeConfigPaths(home: string = SKILLSYNC_HOME) {
 
 export const DEFAULT_CONFIG: Config = {
   sources: [],
-  instructions: {},
+  instructions: [],
   syncs: [],
 }
 
@@ -44,8 +44,13 @@ function validateConfig(raw: unknown): Config {
     if (typeof src.path !== 'string') throw new Error('Invalid config: sources[].path must be a string')
   }
 
-  if (typeof obj.instructions !== 'object' || Array.isArray(obj.instructions) || obj.instructions === null) {
-    throw new Error('Invalid config: "instructions" must be an object')
+  if (!Array.isArray(obj.instructions)) {
+    throw new Error('Invalid config: "instructions" must be an array')
+  }
+  for (const i of obj.instructions) {
+    const instr = assertObject(i, 'instructions entry')
+    if (typeof instr.label !== 'string') throw new Error('Invalid config: instructions[].label must be a string')
+    if (typeof instr.path !== 'string') throw new Error('Invalid config: instructions[].path must be a string')
   }
 
   if (!Array.isArray(obj.syncs)) {

@@ -1,4 +1,5 @@
 import * as path from 'path'
+import * as fse from 'fs-extra'
 import chalk from 'chalk'
 import { makeConfigPaths, readConfig } from '../lib/config'
 import { isLiveSymlink, isBrokenSymlink } from '../lib/fs'
@@ -14,46 +15,53 @@ export async function runStatus(
   log(chalk.bold('\nSkills'))
   const skillSyncs = config.syncs.filter(s => s.type === 'skill')
 
-  if (skillSyncs.length === 0) {
-    log(chalk.gray('  (none synced — run: skillsync skill list)'))
+  const skillLabels = await fse.pathExists(paths.skillsDir) ? await fse.readdir(paths.skillsDir) : []
+  if (skillLabels.length === 0) {
+    log(chalk.gray('  (none registered — run: skillsync skill add)'))
   }
 
-  for (const entry of skillSyncs) {
-    const [label, skillName] = entry.ref.split('/')
-    const centralLink = path.join(paths.skillsDir, label, skillName)
-    const live = await isLiveSymlink(centralLink)
-    const broken = await isBrokenSymlink(centralLink)
-    const health = live
-      ? chalk.green('✅ source live')
-      : broken ? chalk.yellow('⚠️ broken source') : chalk.gray('?')
+  for (const label of skillLabels) {
+    const labelDir = path.join(paths.skillsDir, label)
+    const skillNames = await fse.readdir(labelDir)
+    for (const skillName of skillNames) {
+      const centralLink = path.join(labelDir, skillName)
+      const live = await isLiveSymlink(centralLink)
+      const broken = await isBrokenSymlink(centralLink)
+      const health = live
+        ? chalk.green('✅ source live')
+        : broken ? chalk.yellow('⚠️ broken source') : chalk.gray('?')
 
-    log(`  ${entry.ref}   ${health}`)
+      log(`  ${label}/${skillName}   ${health}`)
 
-    for (const dest of entry.destinations) {
-      const destLive = await isLiveSymlink(dest.path)
-      const destStatus = destLive ? chalk.green('✅') : chalk.red('✗ missing')
-      log(`    → ${dest.path}  [${dest.tool} · ${dest.scope}]  ${destStatus}`)
+      const entry = skillSyncs.find(s => s.ref === `${label}/${skillName}`)
+      const destinations = entry?.destinations ?? []
+      if (destinations.length === 0) {
+        log(chalk.gray('    → (not synced yet)'))
+      } else {
+        for (const dest of destinations) {
+          const destLive = await isLiveSymlink(dest.path)
+          const destStatus = destLive ? chalk.green('✅') : chalk.red('✗ missing')
+          log(`    → ${dest.path}  [${dest.tool} · ${dest.scope}]  ${destStatus}`)
+        }
+      }
     }
   }
 
   log(chalk.bold('\nInstructions'))
   const instrSyncs = config.syncs.filter(s => s.type === 'instructions')
 
-  if (instrSyncs.length === 0 && Object.keys(config.instructions).length === 0) {
-    log(chalk.gray('  (none registered)'))
+  if (config.instructions.length === 0) {
+    log(chalk.gray('  (none registered — run: skillsync instructions add)'))
   }
 
-  for (const scope of ['global', 'project'] as const) {
-    const sourcePath = config.instructions[scope]
-    if (!sourcePath) continue
-
-    const instrLink = path.join(paths.instructionsDir, `${scope}.md`)
+  for (const instr of config.instructions) {
+    const instrLink = path.join(paths.instructionsDir, `${instr.label}.md`)
     const live = await isLiveSymlink(instrLink)
     const health = live ? chalk.green('✅ source live') : chalk.yellow('⚠️ broken source')
-    log(`  ${scope}   ${health}  (${sourcePath})`)
+    log(`  ${instr.label}   ${health}`)
 
-    const scopeSyncs = instrSyncs.filter(s => s.ref === scope)
-    const destinations = scopeSyncs.flatMap(e => e.destinations)
+    const entry = instrSyncs.find(s => s.ref === instr.label)
+    const destinations = entry?.destinations ?? []
     if (destinations.length === 0) {
       log(chalk.gray('    → (not synced yet)'))
     } else {

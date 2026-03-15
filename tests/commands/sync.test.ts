@@ -191,11 +191,11 @@ describe('runSync — instructions', () => {
   it('creates destination symlink for instructions at tool path', async () => {
     const sourceFile = path.join(tmpDir, 'CLAUDE.md')
     await fse.writeFile(sourceFile, '# My instructions')
-    const instrLink = path.join(paths.instructionsDir, 'global.md')
+    const instrLink = path.join(paths.instructionsDir, 'work.md')
     await fse.symlink(sourceFile, instrLink)
 
     const config = await readConfig(paths.configPath)
-    config.instructions.global = sourceFile
+    config.instructions = [{ label: 'work', path: sourceFile }]
     await writeConfig(config, paths.configPath)
 
     const destFile = path.join(tmpDir, 'dest', 'CLAUDE.md')
@@ -203,9 +203,10 @@ describe('runSync — instructions', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
+      'Which instructions? (↑↓ navigate, Space select, a = all, Enter confirm)': ['work'],
       'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
-      'Destination for Claude Code instructions (global):': destFile,
+      'Destination for "work" in Claude Code (global):': destFile,
     })
 
     await runSync(prompts, paths)
@@ -217,11 +218,11 @@ describe('runSync — instructions', () => {
   it('warns before replacing non-managed existing file', async () => {
     const sourceFile = path.join(tmpDir, 'CLAUDE.md')
     await fse.writeFile(sourceFile, '# source')
-    const instrLink = path.join(paths.instructionsDir, 'global.md')
+    const instrLink = path.join(paths.instructionsDir, 'work.md')
     await fse.symlink(sourceFile, instrLink)
 
     const config = await readConfig(paths.configPath)
-    config.instructions.global = sourceFile
+    config.instructions = [{ label: 'work', path: sourceFile }]
     await writeConfig(config, paths.configPath)
 
     const destFile = path.join(tmpDir, 'dest', 'CLAUDE.md')
@@ -230,9 +231,10 @@ describe('runSync — instructions', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
+      'Which instructions? (↑↓ navigate, Space select, a = all, Enter confirm)': ['work'],
       'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
       'Scope:': 'global',
-      'Destination for Claude Code instructions (global):': destFile,
+      'Destination for "work" in Claude Code (global):': destFile,
       'CLAUDE.md already exists and is not managed by skillsync. Replace with symlink?': true,
     })
 

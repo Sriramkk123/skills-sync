@@ -18,9 +18,14 @@ export interface SyncEntry {
   destinations: SyncDestination[]
 }
 
+export interface InstructionSource {
+  label: string
+  path: string
+}
+
 export interface Config {
   sources: Source[]
-  instructions: Partial<Record<Scope, string>>
+  instructions: InstructionSource[]
   syncs: SyncEntry[]
 }
 
