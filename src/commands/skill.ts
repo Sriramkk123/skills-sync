@@ -76,6 +76,37 @@ export async function runSkillAdd(
   await writeConfig(config, paths.configPath)
 }
 
+export async function runSkillRemove(
+  prompts: PromptAdapter,
+  paths: ConfigPaths = makeConfigPaths(),
+  log: (line: string) => void = console.log
+): Promise<void> {
+  const config = await readConfig(paths.configPath)
+
+  if (config.sources.length === 0) {
+    log(chalk.yellow('No sources registered.'))
+    return
+  }
+
+  const label = await prompts.select(
+    'Which source to remove?',
+    config.sources.map(s => ({ name: `${s.label} (${s.path})`, value: s.label }))
+  )
+
+  // Remove central store symlinks only — source registration is preserved
+  const labelDir = path.join(paths.skillsDir, label)
+  if (await fse.pathExists(labelDir)) {
+    for (const skill of await fse.readdir(labelDir)) {
+      await fse.remove(path.join(labelDir, skill))
+      log(chalk.green(`✅ Removed central store: ${label}/${skill}`))
+    }
+    await fse.remove(labelDir)
+  }
+
+  await writeConfig(config, paths.configPath)
+  log(chalk.green(`✅ Removed central store for "${label}"`))
+}
+
 export async function runSkillList(
   paths: ConfigPaths = makeConfigPaths(),
   log: (line: string) => void = console.log

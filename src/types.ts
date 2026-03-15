@@ -31,4 +31,6 @@ export interface ToolDefinition {
   projectSkillsDir: string
   globalInstructionFile: string
   projectInstructionFile: string
+  /** Uses file copies instead of symlinks — edits at destination won't reflect back at source */
+  usesCopy?: boolean
 }

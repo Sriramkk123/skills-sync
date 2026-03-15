@@ -48,11 +48,27 @@ async function syncSkills(
     return
   }
 
-  const selected = await prompts.multiselect('Which skills?', available)
+  const selected = await prompts.multiselect('Which skills? (Space to select)', available)
+  if (selected.length === 0) {
+    log(chalk.yellow('No skills selected. Aborting.'))
+    return
+  }
+
   const toolIds = await prompts.multiselect(
-    'Which tool(s)?',
+    'Which tool(s)? (Space to select)',
     TOOLS.map(t => ({ name: t.name, value: t.id }))
   )
+  if (toolIds.length === 0) {
+    log(chalk.yellow('No tools selected. Aborting.'))
+    return
+  }
+
+  const copyTools = toolIds.filter(id => TOOLS.find(t => t.id === id)?.usesCopy)
+  if (copyTools.length > 0) {
+    const names = copyTools.map(id => TOOLS.find(t => t.id === id)!.name).join(', ')
+    log(chalk.yellow(`⚠️  ${names} does not support symlinks — skills will be copied instead.`))
+    log(chalk.yellow(`   Edits made in ${names} will NOT reflect back at the source.`))
+  }
   const scope = (await prompts.select('Scope:', [
     { name: 'global', value: 'global' },
     { name: 'project', value: 'project' },
@@ -108,8 +124,14 @@ async function syncSkills(
         await fse.remove(destLink)
       }
 
-      await createSymlink(centralLink, destLink)
-      log(chalk.green(`✅ ${destLink} → ${centralLink}`))
+      if (tool.usesCopy) {
+        const realSource = await fse.realpath(centralLink)
+        await fse.copy(realSource, destLink, { overwrite: true })
+        log(chalk.green(`✅ ${destLink} (copy from ${realSource})`))
+      } else {
+        await createSymlink(centralLink, destLink)
+        log(chalk.green(`✅ ${destLink} → ${centralLink}`))
+      }
 
       let entry = config.syncs.find(s => s.ref === skillRef && s.type === 'skill')
       if (!entry) {
@@ -144,7 +166,7 @@ async function syncInstructions(
   }
 
   const toolIds = await prompts.multiselect(
-    'Which tool(s)?',
+    'Which tool(s)? (Space to select)',
     TOOLS.map(t => ({ name: t.name, value: t.id }))
   )
 

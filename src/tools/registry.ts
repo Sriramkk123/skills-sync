@@ -18,6 +18,7 @@ export const TOOLS: ToolDefinition[] = [
     projectSkillsDir: '.agent/skills',
     globalInstructionFile: 'GEMINI.md',
     projectInstructionFile: 'AGENTS.md',
+    usesCopy: true,
   },
   {
     id: 'codex',

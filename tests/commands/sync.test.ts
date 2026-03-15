@@ -43,8 +43,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills?': ['personal/brainstorm'],
-      'Which tool(s)?': ['claude-code'],
+      'Which skills? (Space to select)': ['personal/brainstorm'],
+      'Which tool(s)? (Space to select)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
     })
@@ -63,8 +63,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills?': ['personal/brainstorm'],
-      'Which tool(s)?': ['claude-code'],
+      'Which skills? (Space to select)': ['personal/brainstorm'],
+      'Which tool(s)? (Space to select)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
     })
@@ -86,8 +86,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills?': ['personal/brainstorm'],
-      'Which tool(s)?': ['claude-code'],
+      'Which skills? (Space to select)': ['personal/brainstorm'],
+      'Which tool(s)? (Space to select)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
       'brainstorm already exists at destination. Overwrite?': 'overwrite',
@@ -114,8 +114,8 @@ describe('runSync — skills', () => {
 
     const prompts = makeMockPrompts({
       'What to sync?': 'skills',
-      'Which skills?': ['personal/broken'],
-      'Which tool(s)?': ['claude-code'],
+      'Which skills? (Space to select)': ['personal/broken'],
+      'Which tool(s)? (Space to select)': ['claude-code'],
       'Scope:': 'global',
       'Destination directory for Claude Code skills (global):': destDir,
     })
@@ -142,7 +142,7 @@ describe('runSync — instructions', () => {
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
       'Scope:': 'global',
-      'Which tool(s)?': ['claude-code'],
+      'Which tool(s)? (Space to select)': ['claude-code'],
       'Destination for Claude Code instructions (global):': destFile,
     })
 
@@ -169,7 +169,7 @@ describe('runSync — instructions', () => {
     const prompts = makeMockPrompts({
       'What to sync?': 'instructions',
       'Scope:': 'global',
-      'Which tool(s)?': ['claude-code'],
+      'Which tool(s)? (Space to select)': ['claude-code'],
       'Destination for Claude Code instructions (global):': destFile,
       'CLAUDE.md already exists and is not managed by skillsync. Replace with symlink?': true,
     })

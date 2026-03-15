@@ -1,8 +1,14 @@
 #!/usr/bin/env node
+const [major] = process.versions.node.split('.').map(Number)
+if (major < 20) {
+  console.error(`skillsync requires Node.js >= 20 (current: ${process.versions.node}). Run: nvm use 25.2.1`)
+  process.exit(1)
+}
+
 import { Command } from 'commander'
 import chalk from 'chalk'
 import { runInit } from './commands/init'
-import { runSkillAdd, runSkillList } from './commands/skill'
+import { runSkillAdd, runSkillList, runSkillRemove } from './commands/skill'
 import { runInstructionsAdd } from './commands/instructions'
 import { runSync } from './commands/sync'
 import { runStatus } from './commands/status'
@@ -51,6 +57,19 @@ skillCmd
     try {
       await guardInit()
       await runSkillList()
+    } catch (e: any) {
+      console.error(chalk.red(e.message))
+      process.exit(1)
+    }
+  })
+
+skillCmd
+  .command('remove')
+  .description('Remove a registered skill source and its central store symlinks')
+  .action(async () => {
+    try {
+      await guardInit()
+      await runSkillRemove(defaultPrompts)
     } catch (e: any) {
       console.error(chalk.red(e.message))
       process.exit(1)
