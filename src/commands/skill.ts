@@ -4,6 +4,7 @@ import chalk from 'chalk'
 import { PromptAdapter } from '../lib/prompts'
 import { makeConfigPaths, readConfig, writeConfig } from '../lib/config'
 import { createSymlink, isLiveSymlink, isBrokenSymlink } from '../lib/fs'
+import { withAllOption, resolveAll } from '../lib/select'
 
 type ConfigPaths = ReturnType<typeof makeConfigPaths>
 
@@ -33,11 +34,13 @@ export async function runSkillAdd(
       console.log(chalk.yellow('No skill subdirectories found.'))
       return
     }
-    const selected = await prompts.multiselect(
-      'Which skills to register?',
-      dirs.map(d => ({ name: d, value: d }))
+    const choices = dirs.map(d => ({ name: d, value: d }))
+    const picked = await prompts.multiselect(
+      'Which skills to register? (Space to select)',
+      withAllOption(choices)
     )
-    skillPaths = selected.map(name => path.join(absSource, name))
+    const selectedDirs = resolveAll(picked, choices)
+    skillPaths = selectedDirs.map(name => path.join(absSource, name))
   } else {
     skillPaths = [absSource]
   }

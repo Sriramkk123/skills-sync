@@ -66,7 +66,7 @@ describe('runSkillAdd — parent directory with multiple skills', () => {
 
     const prompts = makeMockPrompts({
       'Source path (skill directory or parent directory containing skills):': parentDir,
-      'Which skills to register?': ['skill-a', 'skill-b'],
+      'Which skills to register? (Space to select)': ['skill-a', 'skill-b'],
       'Label for this source:': 'bulk',
     })
 
@@ -74,6 +74,25 @@ describe('runSkillAdd — parent directory with multiple skills', () => {
 
     const linkA = path.join(paths.skillsDir, 'bulk', 'skill-a')
     const linkB = path.join(paths.skillsDir, 'bulk', 'skill-b')
+    expect((await fse.lstat(linkA)).isSymbolicLink()).toBe(true)
+    expect((await fse.lstat(linkB)).isSymbolicLink()).toBe(true)
+  })
+
+  it('registers all skills when All is selected', async () => {
+    const parentDir = path.join(tmpDir, 'skills-parent-all')
+    await fse.ensureDir(path.join(parentDir, 'skill-a'))
+    await fse.ensureDir(path.join(parentDir, 'skill-b'))
+
+    const prompts = makeMockPrompts({
+      'Source path (skill directory or parent directory containing skills):': parentDir,
+      'Which skills to register? (Space to select)': ['__all__'],
+      'Label for this source:': 'bulk-all',
+    })
+
+    await runSkillAdd(prompts, paths)
+
+    const linkA = path.join(paths.skillsDir, 'bulk-all', 'skill-a')
+    const linkB = path.join(paths.skillsDir, 'bulk-all', 'skill-b')
     expect((await fse.lstat(linkA)).isSymbolicLink()).toBe(true)
     expect((await fse.lstat(linkB)).isSymbolicLink()).toBe(true)
   })
