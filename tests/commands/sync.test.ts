@@ -110,6 +110,7 @@ describe('runSync — skills', () => {
     await writeConfig(config, paths.configPath)
 
     const destDir = path.join(tmpDir, 'dest')
+    await fse.ensureDir(destDir)
     const logs: string[] = []
 
     const prompts = makeMockPrompts({
@@ -122,6 +123,47 @@ describe('runSync — skills', () => {
 
     await runSync(prompts, paths, (line) => logs.push(line))
     expect(logs.some(l => l.includes('⚠️') || l.includes('broken'))).toBe(true)
+  })
+
+  it('creates destination directory when user confirms', async () => {
+    await addSkillToStore('personal', 'brainstorm')
+    const destDir = path.join(tmpDir, 'new-dest')
+    // deliberately do NOT create destDir
+
+    const prompts = makeMockPrompts({
+      'What to sync?': 'skills',
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['personal/brainstorm'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
+      'Scope:': 'global',
+      'Destination directory for Claude Code skills (global):': destDir,
+      [`${destDir} does not exist. Create it?`]: true,
+    })
+
+    const logs: string[] = []
+    await runSync(prompts, paths, l => logs.push(l))
+
+    expect(await fse.pathExists(destDir)).toBe(true)
+    expect((await fse.lstat(path.join(destDir, 'brainstorm'))).isSymbolicLink()).toBe(true)
+  })
+
+  it('skips tool when user declines to create missing directory', async () => {
+    await addSkillToStore('personal', 'brainstorm')
+    const destDir = path.join(tmpDir, 'no-create')
+
+    const prompts = makeMockPrompts({
+      'What to sync?': 'skills',
+      'Which skills? (↑↓ navigate, Space select, a = all, Enter confirm)': ['personal/brainstorm'],
+      'Which tool(s)? (↑↓ navigate, Space select, a = all, Enter confirm)': ['claude-code'],
+      'Scope:': 'global',
+      'Destination directory for Claude Code skills (global):': destDir,
+      [`${destDir} does not exist. Create it?`]: false,
+    })
+
+    const logs: string[] = []
+    await runSync(prompts, paths, l => logs.push(l))
+
+    expect(await fse.pathExists(destDir)).toBe(false)
+    expect(logs.some(l => l.includes('Skipping'))).toBe(true)
   })
 
   it('syncs all skills when All is selected', async () => {

@@ -112,8 +112,16 @@ async function syncSkills(
       const destDir = toolDestDirs.get(toolId)!
 
       if (!await fse.pathExists(destDir)) {
-        log(chalk.yellow(`⚠️  Skipping ${tool.name} — destination does not exist: ${destDir}`))
-        continue
+        const create = await prompts.confirm(
+          `${destDir} does not exist. Create it?`,
+          true
+        )
+        if (!create) {
+          log(chalk.yellow(`⚠️  Skipping ${tool.name} — destination does not exist: ${destDir}`))
+          continue
+        }
+        await fse.ensureDir(destDir)
+        log(chalk.green(`✅ Created ${destDir}`))
       }
 
       const destLink = path.join(destDir, skillName)
